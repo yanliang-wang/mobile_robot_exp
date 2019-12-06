@@ -36,7 +36,7 @@ export ROS_MASTER_URI=http://192.168.20.103:11311
 
 在rviz上进行仿真
 
-`roslaunch moveit_planning_execution.launch robot_ip:=127.0.0.1`
+`roslaunch aubo_i5_moveit_config moveit_planning_execution.launch robot_ip:=127.0.0.1`
 
 在gazebo上进行仿真
 
