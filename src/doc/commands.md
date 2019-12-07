@@ -54,3 +54,22 @@ roslaunch easy_handeye aubo_calibration.launch #启动aruco_tracker节点，并�
 roslaunch easy_handeye easy.launch  #进行眼在手上的标定
 ```
 
+### (3)程序节点
+
+`move_aubo`一些机械臂的运动测试实验
+
+`aubo_add_collision`添加机械臂的碰撞物
+
+## 3. 注意事项
+
+### (1) 控制机械臂运动
+
+在orientationConstraint测试中，会出现Controller is taking too long to execute trajectory的错误信息，在aubo_robot-master/aubo_i5_moveit_config/launch/trajectory_execution.launch.xml中修改下面的第一行，并添加第二行可以避免这个错误信息
+
+```
+  <param name="trajectory_execution/allowed_execution_duration_scaling" value="4.0"/> <!-- default 1.2 -->
+  <param name="trajectory_execution/execution_duration_monitoring" value="false" />
+```
+
+
+

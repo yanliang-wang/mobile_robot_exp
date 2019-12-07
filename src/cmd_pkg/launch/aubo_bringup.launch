@@ -1,0 +1,8 @@
+<launch>
+
+    <include file="$(find aubo_i5_moveit_config)/launch/moveit_planning_execution.launch">
+        <arg name="sim" value="false" /> <!--true flase-->
+        <arg name="robot_ip" value="127.0.0.1" /> <!--127.0.0.1 192.168.20.106-->
+    </include>
+</launch>
+
