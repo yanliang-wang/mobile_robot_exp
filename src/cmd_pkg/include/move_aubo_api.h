@@ -25,7 +25,10 @@ void move_with_orientationConstraint(moveit::planning_interface::MoveGroupInterf
                         const geometry_msgs::Pose &start_pose,
                         const geometry_msgs::Pose &target_pose,
                         const std::string& end_effector_link = "wrist3_Link");
-
+void move_Cartesian_path(moveit::planning_interface::MoveGroupInterface &move_group,
+                         const geometry_msgs::Pose &start_pose,
+                         const geometry_msgs::Pose &target_pose
+);
 void add_desktop_collision(moveit::planning_interface::MoveGroupInterface &move_group,
                            moveit::planning_interface::PlanningSceneInterface &planning_scene_interface);
 #endif //SRC_MOVE_AUBO_API_H

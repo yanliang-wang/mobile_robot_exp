@@ -24,7 +24,8 @@ void move_by_joint(moveit::planning_interface::MoveGroupInterface &move_group,
 
     move_group.setJointValueTarget(target_joint);
     moveit::planning_interface::MoveGroupInterface::Plan my_plan;
-    bool success=(move_group.plan(my_plan)==moveit::planning_interface::MoveItErrorCode::SUCCESS);
+    bool success=(move_group.plan(my_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS);
+
     if(success){
         move_group.move();
         ROS_INFO("move by joint --- sucess");
@@ -111,6 +112,42 @@ void move_with_orientationConstraint(moveit::planning_interface::MoveGroupInterf
     move_group.clearPathConstraints();
 }
 
+void move_Cartesian_path(moveit::planning_interface::MoveGroupInterface &move_group,
+                         const geometry_msgs::Pose &start_pose,
+                         const geometry_msgs::Pose &target_pose
+        ){
+    moveit::planning_interface::MoveGroupInterface::Plan plan;
+
+    //  Add three waypoints
+    std::vector<geometry_msgs::Pose> waypoints;
+
+    waypoints.push_back(start_pose);
+    waypoints.push_back(target_pose);
+
+    // We want the Cartesian path to be interpolated at a resolution of 1 cm.
+    moveit_msgs::RobotTrajectory trajectory;
+    const double jump_threshold = 0.0;           //(The jump threshold is set to 0.0)
+    const double eef_step = 0.01;                //(interpolation step)
+    // Calculate Cartesian interpolation path: return path score (0~1, -1 stands for error)
+
+    double fraction = move_group.computeCartesianPath(waypoints, eef_step, jump_threshold, trajectory);
+    if( (1 - fraction) < 0.001 )
+    {
+        ROS_INFO("move Cartesian path compute --- sucess");
+        // 生成机械臂的运动规划数据
+        plan.trajectory_ = trajectory;
+
+        // 执行运动
+        move_group.execute(plan);
+        ROS_INFO("move Cartesian path --- sucess");
+        sleep(1);
+    }
+    else
+    {
+        ROS_INFO("move Cartesian path compute --- faild with only %0.6f success ", fraction);
+    }
+}
+
 void add_desktop_collision(moveit::planning_interface::MoveGroupInterface &move_group,
                            moveit::planning_interface::PlanningSceneInterface &planning_scene_interface){
 
@@ -159,5 +196,6 @@ void add_desktop_collision(moveit::planning_interface::MoveGroupInterface &move_
     std::vector<moveit_msgs::CollisionObject> collision_objects;
     collision_objects.push_back(static_object);
     planning_scene_interface.addCollisionObjects(collision_objects);
-
+    ROS_INFO("add desktop collision --- sucess");
 }
+
