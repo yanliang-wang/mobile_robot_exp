@@ -4,7 +4,7 @@
 
 #include "move_aubo_api.h"
 
-void print_aubo_state(moveit::planning_interface::MoveGroupInterface &move_group){
+/*void print_aubo_state(moveit::planning_interface::MoveGroupInterface &move_group){
     // Get the coordinate system of the basic information
 
     //the Planning Frame , this is a constant
@@ -17,7 +17,7 @@ void print_aubo_state(moveit::planning_interface::MoveGroupInterface &move_group
     geometry_msgs::Pose current_pose;
     current_pose = move_group.getCurrentPose().pose;
     ROS_INFO_STREAM("current pose is "<<current_pose);
-}
+}*/
 
 void move_by_joint(moveit::planning_interface::MoveGroupInterface &move_group,
                    const std::vector<double> &target_joint){
@@ -113,16 +113,16 @@ void move_with_orientationConstraint(moveit::planning_interface::MoveGroupInterf
 }
 
 void move_Cartesian_path(moveit::planning_interface::MoveGroupInterface &move_group,
-                         const geometry_msgs::Pose &start_pose,
-                         const geometry_msgs::Pose &target_pose
+                         const geometry_msgs::Pose &start_wrist3_pose,
+                         const geometry_msgs::Pose &target_wrist3_pose
         ){
     moveit::planning_interface::MoveGroupInterface::Plan plan;
 
     //  Add three waypoints
     std::vector<geometry_msgs::Pose> waypoints;
 
-    waypoints.push_back(start_pose);
-    waypoints.push_back(target_pose);
+    waypoints.push_back(start_wrist3_pose);
+    waypoints.push_back(target_wrist3_pose);
 
     // We want the Cartesian path to be interpolated at a resolution of 1 cm.
     moveit_msgs::RobotTrajectory trajectory;
@@ -197,5 +197,98 @@ void add_desktop_collision(moveit::planning_interface::MoveGroupInterface &move_
     collision_objects.push_back(static_object);
     planning_scene_interface.addCollisionObjects(collision_objects);
     ROS_INFO("add desktop collision --- sucess");
+}
+
+void from_transform_to_pose(const tf::StampedTransform &transform, geometry_msgs::Pose &pose)
+{
+    pose.position.x = transform.getOrigin().x();
+    pose.position.y = transform.getOrigin().y();
+    pose.position.z = transform.getOrigin().z();
+    pose.orientation.x = transform.getRotation().getX();
+    pose.orientation.y = transform.getRotation().getY();
+    pose.orientation.z = transform.getRotation().getZ();
+    pose.orientation.w = transform.getRotation().getW();
+
+}
+
+void compute_wrist3_pose(const geometry_msgs::Pose &target_marker_pose ,
+                         geometry_msgs::Pose &target_wrist3_pose,
+                         const double &distance_gripper_w3,
+                         const double &object_height ,
+                         const bool &is_pickup){
+    // base w3 gripper marker
+    // 欧氏变换矩阵使用 Eigen::Isometry,齐次矩阵
+    Eigen::Isometry3d T_w3_gripper = Eigen::Isometry3d::Identity();
+    T_w3_gripper.pretranslate(Eigen::Vector3d ( 0,0, distance_gripper_w3));
+    std::cout << "T_w3_gripper = \n" << T_w3_gripper.matrix() << std::endl;
+
+    Eigen::Isometry3d T_base_marker = Eigen::Isometry3d::Identity();                // 虽然称为3d，实质上是4＊4的矩阵
+    T_base_marker.rotate (Eigen::Quaterniond(target_marker_pose.orientation.w,
+                                             target_marker_pose.orientation.x,
+                                             target_marker_pose.orientation.y,
+                                             target_marker_pose.orientation.z) );
+    T_base_marker.pretranslate (Eigen::Vector3d (target_marker_pose.position.x,
+                                                 target_marker_pose.position.y,
+                                                 target_marker_pose.position.z) );
+    std::cout << "T_base_marker = \n" << T_base_marker.matrix() << std::endl;
+
+
+    Eigen::AngleAxisd rollAngle(3.1415926/2, Eigen::Vector3d::UnitX());
+    Eigen::Isometry3d T_marker_gripper = Eigen::Isometry3d::Identity();
+
+    if(is_pickup){// pick up
+        T_marker_gripper.pretranslate(Eigen::Vector3d(0,0,-object_height/2));
+    }
+    else{//place
+        T_marker_gripper.pretranslate(Eigen::Vector3d(0,0,object_height/2));
+    }
+    T_marker_gripper.rotate(rollAngle);
+    std::cout << "T_marker_gripper = \n" << T_marker_gripper.matrix() << std::endl;
+
+    Eigen::Isometry3d T_base_gripper( T_base_marker.matrix() * T_marker_gripper.matrix());
+    std::cout << "T_base_gripper = \n" << T_base_gripper.matrix() << std::endl;
+
+
+    Eigen::Isometry3d T_base_w3(T_base_gripper.matrix() * T_w3_gripper.matrix().inverse() ) ;
+    Eigen::Matrix3d m_base_w3 = T_base_w3.matrix().block(0, 0, 3, 3);
+    Eigen::Quaterniond q(m_base_w3);
+    Eigen::Vector3d v_base_w3(T_base_w3.matrix().block(0, 3, 3, 1) );
+    target_wrist3_pose.position.x = v_base_w3(0);
+    target_wrist3_pose.position.y = v_base_w3(1);
+    target_wrist3_pose.position.z = v_base_w3(2);
+    target_wrist3_pose.orientation.x = q.x();
+    target_wrist3_pose.orientation.y = q.y();
+    target_wrist3_pose.orientation.z = q.z();
+    target_wrist3_pose.orientation.w = q.w();
+
+/*    // broadcaseter the tf between base_link  and gripper_link
+    tf::TransformBroadcaster br;
+    tf::Transform transform;
+    Eigen::Vector3d v_base_gripper(T_base_w3.matrix().block(0,3,3,1) );
+    transform.setOrigin(tf::Vector3( v_base_gripper(0) , v_base_gripper(1) , v_base_gripper(2) ));
+    transform.setRotation(tf::Quaternion(q.x() , q.y() , q.z() , q.w())); // w3 and gripper have the same q
+    std::cout<<"发布tf变换：sendTransform函数"<<std::endl;
+    br.sendTransform(tf::StampedTransform(transform,ros::Time::now(),"/base_link","/gripper_link"));*/
+}
+
+void get_marker_pose(const std::string marker_frame , geometry_msgs::Pose &target_marker_pose){
+    //******look up the tranform between usb_rgb_optical_frame and camera_marker
+    tf::TransformListener listener;
+    //1. 阻塞直到frame相通
+    std::cout<<"1. 阻塞直到frame相通"<<std::endl;
+    listener.waitForTransform("/base_link", marker_frame, ros::Time(0), ros::Duration(10.0));
+    if(!listener.canTransform("/base_link", marker_frame, ros::Time(0) ) ){
+        ROS_ERROR("%s","waitForTransform timeout");
+    }
+    tf::StampedTransform transform_marker;
+    //2. 监听对应的tf,返回平移和旋转
+    std::cout<<"2. 监听对应的tf,返回平移和旋转"<<std::endl;
+    listener.lookupTransform("/base_link", marker_frame,
+                             ros::Time(0), transform_marker);        //ros::Time(0)表示最近的一帧坐标变换
+    from_transform_to_pose(transform_marker , target_marker_pose);
+    std::cout<<"输出的位置坐标：x="<<transform_marker.getOrigin().x()<<",y="<<transform_marker.getOrigin().y()<<",z="<<transform_marker.getOrigin().z()<<std::endl;
+    std::cout<<"输出的旋转四元数：w="<<transform_marker.getRotation().getW()<<",x="<<transform_marker.getRotation().getX()<<
+             ",y="<<transform_marker.getRotation().getY()<<",z="<<transform_marker.getRotation().getZ()<<std::endl;
+    ROS_INFO_STREAM("marker object pose is " << target_marker_pose);
 }
 

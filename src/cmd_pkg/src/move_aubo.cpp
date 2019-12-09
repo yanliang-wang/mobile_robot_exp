@@ -3,12 +3,10 @@
 #include <moveit/planning_scene_interface/planning_scene_interface.h>
 #include <moveit_msgs/CollisionObject.h>
 
-#include <moveit_visual_tools/moveit_visual_tools.h>
 #include <tf/LinearMath/Quaternion.h>
 
 #include "move_aubo_api.h"
 #define PI 3.1415926
-
 int main(int argc, char** argv)
 {
     //initialize
@@ -48,23 +46,23 @@ int main(int argc, char** argv)
     move_by_joint(move_group, home_joint);// go to home pose
 
     // get current pose
-    geometry_msgs::Pose currnt_pose = move_group.getCurrentPose().pose;// relative to world
-    currnt_pose.position.z -= 0.5; // minus the distance between world and base_link
+    geometry_msgs::Pose currnt_wrist3_pose = move_group.getCurrentPose().pose;// relative to world
+    currnt_wrist3_pose.position.z -= 0.5; // minus the distance between world and base_link
     // Set the target pose , RPY mode (rotation around the reference axis X, Y, Z)
-    geometry_msgs::Pose target_pose;
+    geometry_msgs::Pose target_wrist3_pose;
     tf::Quaternion q;
     q.setRPY(3.14,0,-1.57);       //radian
-    target_pose.position.x = -0.4;
-    target_pose.position.y = -0.3;
-    target_pose.position.z = 0.30;
-    target_pose.orientation.x = q.x();
-    target_pose.orientation.y = q.y();
-    target_pose.orientation.z = q.z();
-    target_pose.orientation.w = q.w();
+    target_wrist3_pose.position.x = -0.4;
+    target_wrist3_pose.position.y = -0.3;
+    target_wrist3_pose.position.z = 0.30;
+    target_wrist3_pose.orientation.x = q.x();
+    target_wrist3_pose.orientation.y = q.y();
+    target_wrist3_pose.orientation.z = q.z();
+    target_wrist3_pose.orientation.w = q.w();
     //move_by_coordinate(move_group,target_pose);
 
-    geometry_msgs::Pose start_pose = target_pose;
-    start_pose.position.z = currnt_pose.position.z ;
+    geometry_msgs::Pose start_wrist3_pose = target_wrist3_pose;
+    start_wrist3_pose.position.z = currnt_wrist3_pose.position.z ;
 /*    // rotate around a joint
     std::vector<double> target_joint;
     target_joint = move_group.getCurrentJointValues();
@@ -92,7 +90,7 @@ int main(int argc, char** argv)
 
     move_group.setPoseTarget(target_pose3_1);
     move_with_orientationConstraint(move_group,start_pose2,target_pose3_1);*/
-    move_Cartesian_path(move_group,start_pose,target_pose);
+    move_Cartesian_path(move_group, start_wrist3_pose, target_wrist3_pose);
 
     move_by_joint(move_group,home_joint);
 

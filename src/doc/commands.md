@@ -70,6 +70,45 @@ roslaunch easy_handeye easy.launch  #进行眼在手上的标定
   <param name="trajectory_execution/allowed_execution_duration_scaling" value="4.0"/> <!-- default 1.2 -->
   <param name="trajectory_execution/execution_duration_monitoring" value="false" />
 ```
+### (2)  simulatin test
 
+`roslaunch cmd_pkg aubo_bringup.launch`
 
+`rosrun cmd_pkg aubo_add_collision`
 
+`rosrun cmd_pkg move_all`
+
+`rostopic echo /move_base/result`   `rostopic echo /hand_control_cmd`
+
+```
+rostopic pub /move_base_simple/goal geometry_msgs/seStamped "header:
+     seq: 0
+     stamp:
+       secs: 0
+       nsecs: 0
+     frame_id: 'map'
+   pose:
+     position:
+       x: -0.51489508152
+       y: -0.530243039131
+       z: 0.0
+     orientation:
+       x: 0.0
+       y: 0.0
+       z: -0.705563271538
+       w: 0.708646928912"
+```
+
+### (3)真机Debug
+
+#### a. 测试gripper
+
+#### b. 手眼标定，看多张aruco码的识别效果，看根据marker得到的gripper位姿是否合理
+
+#### c. 找一个效果好的实验室地图，测试 底盘导航
+
+#### d. 准备实验物品
+
+比底盘稍微高一点的凳子
+
+贴有aruco码的长方体物体，和一个相同尺寸的aruco码 
