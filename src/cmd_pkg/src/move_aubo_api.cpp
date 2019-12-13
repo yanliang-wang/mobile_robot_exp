@@ -52,7 +52,6 @@ void move_by_coordinate(moveit::planning_interface::MoveGroupInterface &move_gro
         ROS_INFO("move by coordinate --- failed");
     }
 
-
 }
 
 void move_with_orientationConstraint(moveit::planning_interface::MoveGroupInterface &move_group,

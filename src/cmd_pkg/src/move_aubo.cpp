@@ -29,7 +29,7 @@ int main(int argc, char** argv)
     moveit::planning_interface::PlanningSceneInterface planning_scene_interface;// Create a planning scene interface object
 
     //output some basic information
-    print_aubo_state(move_group);
+    //print_aubo_state(move_group);
     //add the basic desktop collision object
     add_desktop_collision(move_group, planning_scene_interface);
 

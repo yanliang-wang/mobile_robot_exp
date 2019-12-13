@@ -13,8 +13,8 @@ MOVE_ALL::MOVE_ALL(): moveit::planning_interface::MoveGroupInterface("manipulato
     sub = n.subscribe("/move_base/result" , 1 , &MOVE_ALL::movebaseResultCallback,this);
     setPoseReferenceFrame(reference_frame);//reference frame
     //设置允许的最大速度和加速度
-    setMaxAccelerationScalingFactor(0.5);
-    setMaxVelocityScalingFactor(0.5);
+    setMaxAccelerationScalingFactor(0.2);
+    setMaxVelocityScalingFactor(0.2);
     //当运动规划失败后，允许重新规划
     allowReplanning(true);
 
@@ -23,24 +23,44 @@ MOVE_ALL::MOVE_ALL(): moveit::planning_interface::MoveGroupInterface("manipulato
     msg_open.value = 1;
     msg_close.msgtype = "Close";
     msg_close.value = 1;
-    if(sim){
-        marker_frame = "/wrist3_Link";
-    }
-    else{
-        marker_frame = "/camera_marker";
-    }
+    msg_enable.msgtype = "Enble";
+    msg_enable.value = 1;
+    marker_frame = "/marker_frame";
+
     //output some basic moveit information
     print_aubo_state();
     //add the basic desktop collision object
     add_desktop_collision();
     //define a home state and move to it
-    home_joint.push_back(-0.001255);
+/*    home_joint.push_back(-1.11018);
     home_joint.push_back(-0.148822);
     home_joint.push_back(-1.406503);
     home_joint.push_back(0.311441);
     home_joint.push_back(-1.571295);
-    home_joint.push_back(-0.002450);
+    home_joint.push_back(-0.002450);*/
+    home_joint.push_back(-1.11018);
+    home_joint.push_back(0.146884);
+    home_joint.push_back(-1.13574);
+    home_joint.push_back(0.286447);
+    home_joint.push_back(-1.57164);
+    home_joint.push_back(0.554514);
+    //define a home state and move to it
+    home_joint_grip.push_back(-1.11018);
+    home_joint_grip.push_back(0.146884);
+    home_joint_grip.push_back(-1.13574);
+    home_joint_grip.push_back(0.286447);
+    home_joint_grip.push_back(-1.57164);
+    home_joint_grip.push_back(0.554514);
+/*    home_joint_grip.push_back(-1.11954);
+    home_joint_grip.push_back(0.509547);
+    home_joint_grip.push_back(-0.638324);
+    home_joint_grip.push_back(0.421445);
+    home_joint_grip.push_back(-1.57202);
+    home_joint_grip.push_back(0.795159);*/
     move_by_joint( home_joint);
+    geometry_msgs::Pose initial_marker_pose;
+    initial_marker_pose;
+    get_marker_pose(marker_frame, initial_marker_pose);
 }
 
 void MOVE_ALL::movebaseResultCallback(const move_base_msgs::MoveBaseActionResult::ConstPtr &msg)
@@ -64,7 +84,6 @@ z: -0.705563271538
 w: 0.708646928912"
  * */
     sleep(1.0);
-    const double object_height = 0.05; // the height of the object to grip
     static int num = 0;
     ++num;
     ROS_INFO("The goal %d is reached!", num );
@@ -73,7 +92,10 @@ w: 0.708646928912"
     {
         //**************first point --- pick up
         ROS_INFO("Open the gripper!");
+        pub_gripper_command.publish(msg_enable);
+        sleep(0.5);
         pub_gripper_command.publish(msg_open);//open the gripper
+        move_by_joint(home_joint_grip); //move to the pose to grip
         //****** get the marker pose
         geometry_msgs::Pose target_marker_pose;
         get_marker_pose(marker_frame,target_marker_pose);
@@ -82,16 +104,22 @@ w: 0.708646928912"
         compute_wrist3_pose(target_marker_pose,target_wrist3_pose , distance_gripper_w3 , object_height, true);
         //****** execute the grip
         geometry_msgs::Pose currnt_wrist3_pose = getCurrentPose().pose;//relative to world
-        geometry_msgs::Pose start_wrist3_pose = target_wrist3_pose;
         currnt_wrist3_pose.position.z -= height_world_base;
+        target_wrist3_pose.orientation = currnt_wrist3_pose.orientation;
+        geometry_msgs::Pose start_wrist3_pose = target_wrist3_pose;
         start_wrist3_pose.position.z = currnt_wrist3_pose.position.z ;//relative to world
-        move_Cartesian_path( start_wrist3_pose, target_wrist3_pose);
+        move_by_coordinate(start_wrist3_pose);
+        move_by_coordinate(target_wrist3_pose);
+//        move_Cartesian_path( start_wrist3_pose, target_wrist3_pose);
         sleep(1.0);
         //****** grip and make the aubo move to home state
         ROS_INFO("Close the gripper!");
+        pub_gripper_command.publish(msg_enable);
+        sleep(0.5);
         pub_gripper_command.publish(msg_close);//close the gripper
         sleep(1.0);
-        move_Cartesian_path( target_wrist3_pose,start_wrist3_pose);
+//        move_Cartesian_path( target_wrist3_pose,start_wrist3_pose);
+        move_by_coordinate(start_wrist3_pose);
         move_by_joint(home_joint);
 
         //****** move to the position to place the object
@@ -111,23 +139,32 @@ w: 0.708646928912"
     }
     else if(num == 2){
         //************* home point --- place
+        move_by_joint(home_joint_grip);//move to the pose to place
+
         geometry_msgs::Pose target_marker_pose;
         get_marker_pose(marker_frame,target_marker_pose);
         //****** compute the pose to place
         geometry_msgs::Pose target_wrist3_pose;
         compute_wrist3_pose(target_marker_pose,target_wrist3_pose , distance_gripper_w3 , object_height, false);
+        target_wrist3_pose.position.z += object_height;
         //****** execute the grip
         geometry_msgs::Pose currnt_wrist3_pose = getCurrentPose().pose;//relative to world
+        target_wrist3_pose.orientation = currnt_wrist3_pose.orientation;
         geometry_msgs::Pose start_wrist3_pose = target_wrist3_pose;
         currnt_wrist3_pose.position.z -= height_world_base;
         start_wrist3_pose.position.z = currnt_wrist3_pose.position.z ;//relative to world
-        move_Cartesian_path( start_wrist3_pose, target_wrist3_pose);
+        move_by_coordinate(start_wrist3_pose);
+        move_by_coordinate(target_wrist3_pose);
+//        move_Cartesian_path( start_wrist3_pose, target_wrist3_pose);
         sleep(1.0);
         //****** grip and make the aubo move to home state
         ROS_INFO("Open the gripper!");
+        pub_gripper_command.publish(msg_enable);
+        sleep(0.5);
         pub_gripper_command.publish(msg_open);//open the gripper
         sleep(1.0);
-        move_Cartesian_path( target_wrist3_pose , start_wrist3_pose);
+//        move_Cartesian_path( target_wrist3_pose , start_wrist3_pose);
+        move_by_coordinate(start_wrist3_pose);
         move_by_joint(home_joint);
 
         //****** move to the other position
@@ -264,22 +301,27 @@ void MOVE_ALL::move_Cartesian_path(const geometry_msgs::Pose &start_wrist3_pose,
 void MOVE_ALL::get_marker_pose(const std::string &marker_frame, geometry_msgs::Pose &target_marker_pose)
 {
     //******look up the tranform between usb_rgb_optical_frame and camera_marker
-    tf::TransformListener listener;
     //1. 阻塞直到frame相通
     std::cout<<"1. 阻塞直到frame相通"<<std::endl;
-    listener.waitForTransform("/base_link", marker_frame, ros::Time(0), ros::Duration(10.0));
-    if(!listener.canTransform("/base_link", marker_frame, ros::Time(0) ) ){
+    listener.waitForTransform("/base_link",marker_frame,  ros::Time(), ros::Duration(10.0));
+    if(!listener.canTransform("/base_link",marker_frame,  ros::Time() ) ){
         ROS_ERROR("%s","waitForTransform timeout");
     }
     tf::StampedTransform transform_marker;
     //2. 监听对应的tf,返回平移和旋转
     std::cout<<"2. 监听对应的tf,返回平移和旋转"<<std::endl;
-    listener.lookupTransform("/base_link", marker_frame,
+    listener.lookupTransform("/base_link",marker_frame,
                              ros::Time(0), transform_marker);        //ros::Time(0)表示最近的一帧坐标变换
+    tf::Quaternion q = transform_marker.getRotation();
+    tf::Vector3 v = transform_marker.getOrigin();
+
     from_transform_to_pose(transform_marker , target_marker_pose);
-    std::cout<<"输出的位置坐标：x="<<transform_marker.getOrigin().x()<<",y="<<transform_marker.getOrigin().y()<<",z="<<transform_marker.getOrigin().z()<<std::endl;
+/*    std::cout<<"输出的位置坐标：x="<<transform_marker.getOrigin().x()<<",y="<<transform_marker.getOrigin().y()<<",z="<<transform_marker.getOrigin().z()<<std::endl;
     std::cout<<"输出的旋转四元数：w="<<transform_marker.getRotation().getW()<<",x="<<transform_marker.getRotation().getX()<<
-             ",y="<<transform_marker.getRotation().getY()<<",z="<<transform_marker.getRotation().getZ()<<std::endl;
+             ",y="<<transform_marker.getRotation().getY()<<",z="<<transform_marker.getRotation().getZ()<<std::endl;*/
+    std::cout<<"输出的位置坐标：x="<<v.getX()<<",y="<<v.getY()<<",z="<<v.getZ()<<std::endl;
+    std::cout<<"输出的旋转四元数：w="<<q.getW()<<",x="<<q.getX()<<
+             ",y="<<q.getY()<<",z="<<q.getZ()<<std::endl;
     ROS_INFO_STREAM("marker object pose is " << target_marker_pose);
 }
 
@@ -294,13 +336,14 @@ MOVE_ALL::compute_wrist3_pose(const geometry_msgs::Pose &target_marker_pose, geo
     std::cout << "T_w3_gripper = \n" << T_w3_gripper.matrix() << std::endl;
 
     Eigen::Isometry3d T_base_marker = Eigen::Isometry3d::Identity();                // 虽然称为3d，实质上是4＊4的矩阵
+    T_base_marker.translate (Eigen::Vector3d (target_marker_pose.position.x,
+                                              target_marker_pose.position.y,
+                                              target_marker_pose.position.z) );
     T_base_marker.rotate (Eigen::Quaterniond(target_marker_pose.orientation.w,
                                              target_marker_pose.orientation.x,
                                              target_marker_pose.orientation.y,
-                                             target_marker_pose.orientation.z) );
-    T_base_marker.pretranslate (Eigen::Vector3d (target_marker_pose.position.x,
-                                                 target_marker_pose.position.y,
-                                                 target_marker_pose.position.z) );
+                                             target_marker_pose.orientation.z) );//right multiply
+
     std::cout << "T_base_marker = \n" << T_base_marker.matrix() << std::endl;
 
 
@@ -308,10 +351,10 @@ MOVE_ALL::compute_wrist3_pose(const geometry_msgs::Pose &target_marker_pose, geo
     Eigen::Isometry3d T_marker_gripper = Eigen::Isometry3d::Identity();
 
     if(is_pickup){// pick up
-        T_marker_gripper.pretranslate(Eigen::Vector3d(0,0,-object_height/2));
+        T_marker_gripper.pretranslate(Eigen::Vector3d(0,0,0));
     }
     else{//place
-        T_marker_gripper.pretranslate(Eigen::Vector3d(0,0,object_height/2));
+        T_marker_gripper.pretranslate(Eigen::Vector3d(0,0,0));
     }
     T_marker_gripper.rotate(rollAngle);
     std::cout << "T_marker_gripper = \n" << T_marker_gripper.matrix() << std::endl;
@@ -320,28 +363,18 @@ MOVE_ALL::compute_wrist3_pose(const geometry_msgs::Pose &target_marker_pose, geo
     std::cout << "T_base_gripper = \n" << T_base_gripper.matrix() << std::endl;
 
 
-    Eigen::Isometry3d T_base_w3(T_base_gripper.matrix() * T_w3_gripper.matrix().inverse() ) ;
+    Eigen::Isometry3d T_base_w3( T_base_gripper.matrix() * T_w3_gripper.matrix().inverse() ) ;
+    std::cout << "T_base_w3 = \n" << T_base_w3.matrix() << std::endl;
     Eigen::Matrix3d m_base_w3 = T_base_w3.matrix().block(0, 0, 3, 3);
     Eigen::Quaterniond q(m_base_w3);
     Eigen::Vector3d v_base_w3(T_base_w3.matrix().block(0, 3, 3, 1) );
-    if(sim){
-        target_wrist3_pose.position.x = target_marker_pose.position.x + 0.1;
-        target_wrist3_pose.position.y = target_marker_pose.position.y + 0.1;
-        target_wrist3_pose.position.z = target_marker_pose.position.z - 0.1;
-        target_wrist3_pose.orientation.x = target_marker_pose.orientation.x;
-        target_wrist3_pose.orientation.y = target_marker_pose.orientation.y;
-        target_wrist3_pose.orientation.z = target_marker_pose.orientation.z;
-        target_wrist3_pose.orientation.w = target_marker_pose.orientation.w;
-    }
-    else{
-        target_wrist3_pose.position.x = v_base_w3(0);
-        target_wrist3_pose.position.y = v_base_w3(1);
-        target_wrist3_pose.position.z = v_base_w3(2);
-        target_wrist3_pose.orientation.x = q.x();
-        target_wrist3_pose.orientation.y = q.y();
-        target_wrist3_pose.orientation.z = q.z();
-        target_wrist3_pose.orientation.w = q.w();
-    }
+    target_wrist3_pose.position.x = v_base_w3(0);
+    target_wrist3_pose.position.y = v_base_w3(1);
+    target_wrist3_pose.position.z = v_base_w3(2);
+    target_wrist3_pose.orientation.x = q.x();
+    target_wrist3_pose.orientation.y = q.y();
+    target_wrist3_pose.orientation.z = q.z();
+    target_wrist3_pose.orientation.w = q.w();
 
 }
 
@@ -354,6 +387,23 @@ void MOVE_ALL::from_transform_to_pose(const tf::StampedTransform &transform, geo
     pose.orientation.y = transform.getRotation().getY();
     pose.orientation.z = transform.getRotation().getZ();
     pose.orientation.w = transform.getRotation().getW();
+}
+
+void MOVE_ALL::move_by_coordinate(const geometry_msgs::Pose &target_pose)
+{
+    // planning and moving to a target pose
+    // the target_pose is in reference frame
+    setPoseTarget(target_pose);//"" 第二个参数 指定末端执行器的link ，默认为group中的最后一个link
+
+    moveit::planning_interface::MoveGroupInterface::Plan my_plan;
+    bool success = (plan(my_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS);
+    if(success){
+        execute(my_plan);
+        ROS_INFO("move by coordinate --- sucess");
+    }
+    else{
+        ROS_INFO("move by coordinate --- failed");
+    }
 }
 
 

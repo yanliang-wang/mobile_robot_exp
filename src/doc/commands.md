@@ -9,6 +9,7 @@ export ROS_HOSTNAME=192.168.20.114
 export ROS_MASTER_URI=http://192.168.20.103:11311
 ```
 打开终端执行下面指令：
+`ssh pi@192.168.20.102  # enter the ssh terminal`
 
 `底盘终端：roslaunch smart_car smart_car_node.launch  #启动底盘通讯`
 
@@ -101,11 +102,11 @@ rostopic pub /move_base_simple/goal geometry_msgs/seStamped "header:
 
 ### (3)真机Debug
 
-#### a. 测试gripper
+ a. 测试aubo move to home,  gripper open and close
 
 #### b. 手眼标定，看多张aruco码的识别效果，看根据marker得到的gripper位姿是否合理
 
-#### c. 找一个效果好的实验室地图，测试 底盘导航
+ c. 找一个效果好的实验室地图，测试 底盘导航
 
 #### d. 准备实验物品
 

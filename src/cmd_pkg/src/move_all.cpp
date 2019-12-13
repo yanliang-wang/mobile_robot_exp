@@ -11,7 +11,7 @@ int main(int argc, char **argv)
     ros::AsyncSpinner spin(2);//multiple thread , for multiple callback function
     spin.start();
 
-    bool is_sim = true;
+    bool is_sim = false;
     MOVE_ALL move_all;
     move_all.sim = is_sim;
 

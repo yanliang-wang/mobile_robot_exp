@@ -27,18 +27,18 @@ struct MOVE_ALL : public moveit::planning_interface::MoveGroupInterface{
     ros::NodeHandle n;
     ros::Publisher pub_basic_point , pub_gripper_command;
     ros::Subscriber sub ;
-
+    tf::TransformListener listener;
     // some variables
     bool sim;
     // some constants
     const double height_world_base = 1.5105 - 1.0085;
-    std::vector<double> home_joint;
-    hand_control::hand_control_cmd msg_open , msg_close;
+    std::vector<double> home_joint , home_joint_grip;
+    hand_control::hand_control_cmd msg_open , msg_close , msg_enable;
     const std::string reference_frame="base_link";
     const std::string end_effector_link = "wrist3_Link";
     std::string marker_frame ;//camera_marker, set /wrist3_Link to simulate
-    const double distance_gripper_w3 = 0.15;// the distance between gripper_link and wrist3_Link
-
+    const double distance_gripper_w3 = 0.07;// the distance between gripper_link and wrist3_Link
+    const double object_height = 0.15; //the height of the object to grip
     //define a planning scene
     moveit::planning_interface::PlanningSceneInterface planning_scene_interface;// Create a planning scene interface object
 
@@ -49,6 +49,7 @@ struct MOVE_ALL : public moveit::planning_interface::MoveGroupInterface{
     void move_by_joint(const std::vector<double> &target_joint);
     void move_Cartesian_path(const geometry_msgs::Pose &start_wrist3_pose,
                              const geometry_msgs::Pose &target_wrist3_pose);
+    void move_by_coordinate(const geometry_msgs::Pose &target_pose);
     void get_marker_pose(const std::string &marker_frame , geometry_msgs::Pose &target_marker_pose);
     void compute_wrist3_pose(const geometry_msgs::Pose &target_marker_pose ,
                              geometry_msgs::Pose &target_wrist3_pose,
