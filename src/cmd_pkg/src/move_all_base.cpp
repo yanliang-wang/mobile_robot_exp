@@ -61,6 +61,8 @@ MOVE_ALL::MOVE_ALL(): moveit::planning_interface::MoveGroupInterface("manipulato
     geometry_msgs::Pose initial_marker_pose;
     initial_marker_pose;
     get_marker_pose(marker_frame, initial_marker_pose);
+    pub_gripper_command.publish(msg_enable);
+    pub_gripper_command.publish(msg_close);
 }
 
 void MOVE_ALL::movebaseResultCallback(const move_base_msgs::MoveBaseActionResult::ConstPtr &msg)
@@ -137,7 +139,7 @@ w: 0.708646928912"
         pub_basic_point.publish(basic_home_target);
 
     }
-    else if(num == 2){
+    if(num == 1 ){
         //************* home point --- place
         move_by_joint(home_joint_grip);//move to the pose to place
 

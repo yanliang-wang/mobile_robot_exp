@@ -38,7 +38,7 @@ struct MOVE_ALL : public moveit::planning_interface::MoveGroupInterface{
     const std::string end_effector_link = "wrist3_Link";
     std::string marker_frame ;//camera_marker, set /wrist3_Link to simulate
     const double distance_gripper_w3 = 0.07;// the distance between gripper_link and wrist3_Link
-    const double object_height = 0.15; //the height of the object to grip
+    const double object_height = 0.11; //the height of the object to grip
     //define a planning scene
     moveit::planning_interface::PlanningSceneInterface planning_scene_interface;// Create a planning scene interface object
 
