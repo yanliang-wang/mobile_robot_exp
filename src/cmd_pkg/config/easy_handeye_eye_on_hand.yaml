@@ -1,0 +1,11 @@
+eye_on_hand: true
+robot_effector_frame: wrist3_Link
+tracking_base_frame: usb_cam
+transformation:
+  qw: 0.9510635115872553
+  qx: 0.015913498741914882
+  qy: 0.0055191865088352445
+  qz: 0.30853605310464194
+  x: 0.05154882136361722
+  y: -0.022487195410823935
+  z: 0.019785046819264344

@@ -5,7 +5,6 @@
 
 MOVE_ALL::MOVE_ALL(): moveit::planning_interface::MoveGroupInterface("manipulator_i5")
 {
-
     //************ define publisher and subscriber
     pub_basic_point = n.advertise<geometry_msgs::PoseStamped>("/move_base_simple/goal", 2);;
     pub_gripper_command = n.advertise<hand_control::hand_control_cmd>("hand_control_cmd", 1000);
@@ -32,157 +31,95 @@ MOVE_ALL::MOVE_ALL(): moveit::planning_interface::MoveGroupInterface("manipulato
     //add the basic desktop collision object
     add_desktop_collision();
     //define a home state and move to it
-/*    home_joint.push_back(-1.11018);
-    home_joint.push_back(-0.148822);
-    home_joint.push_back(-1.406503);
-    home_joint.push_back(0.311441);
-    home_joint.push_back(-1.571295);
-    home_joint.push_back(-0.002450);*/
     home_joint.push_back(-1.11018);
     home_joint.push_back(0.146884);
     home_joint.push_back(-1.13574);
     home_joint.push_back(0.286447);
     home_joint.push_back(-1.57164);
     home_joint.push_back(0.554514);
-    //define a home state and move to it
-    home_joint_grip.push_back(-1.11018);
-    home_joint_grip.push_back(0.146884);
-    home_joint_grip.push_back(-1.13574);
-    home_joint_grip.push_back(0.286447);
-    home_joint_grip.push_back(-1.57164);
-    home_joint_grip.push_back(0.554514);
-/*    home_joint_grip.push_back(-1.11954);
-    home_joint_grip.push_back(0.509547);
-    home_joint_grip.push_back(-0.638324);
-    home_joint_grip.push_back(0.421445);
-    home_joint_grip.push_back(-1.57202);
-    home_joint_grip.push_back(0.795159);*/
     move_by_joint( home_joint);
-    geometry_msgs::Pose initial_marker_pose;
-    initial_marker_pose;
-    get_marker_pose(marker_frame, initial_marker_pose);
+    //初始状态，检测marker码，并输出marker位姿，检测marker位置是否
+/*    geometry_msgs::Pose initial_marker_pose;
+    get_marker_pose(marker_frame, initial_marker_pose);*/
+    //初始状态，将夹爪打开
     pub_gripper_command.publish(msg_enable);
     pub_gripper_command.publish(msg_close);
 }
 
 void MOVE_ALL::movebaseResultCallback(const move_base_msgs::MoveBaseActionResult::ConstPtr &msg)
 {
-    /*
-rostopic pub /move_base_simple/goal geomey_msgs/PoseStamped "header:
-seq: 0
-stamp:
-secs: 0
-nsecs: 0
-frame_id: 'map'
-pose:
-position:
-x: -0.51489508152
-y: -0.530243039131
-z: 0.0
-orientation:
-x: 0.0
-y: 0.0
-z: -0.705563271538
-w: 0.708646928912"
- * */
+    //**************first point --- pick up
+    ROS_INFO("Open the gripper!");
+    pub_gripper_command.publish(msg_enable);
+    sleep(0.5);
+    pub_gripper_command.publish(msg_open);//open the gripper
+    move_by_joint(home_joint); //move to the pose to grip
+    //****** get the marker pose
+    geometry_msgs::Pose target_marker_pose;
+    get_marker_pose(marker_frame,target_marker_pose);
+    //****** compute the pose to grip
+    geometry_msgs::Pose target_wrist3_pose;
+    compute_wrist3_pose(target_marker_pose,target_wrist3_pose , distance_gripper_w3 , object_height, true);
+    //****** execute the grip
+    geometry_msgs::Pose currnt_wrist3_pose = getCurrentPose().pose;//relative to world
+    currnt_wrist3_pose.position.z -= height_world_base;
+    target_wrist3_pose.orientation = currnt_wrist3_pose.orientation;
+    geometry_msgs::Pose start_wrist3_pose = target_wrist3_pose;
+    start_wrist3_pose.position.z = currnt_wrist3_pose.position.z ;//relative to world
+    move_by_coordinate(start_wrist3_pose);
+    move_by_coordinate(target_wrist3_pose);
+//        move_Cartesian_path( start_wrist3_pose, target_wrist3_pose);
     sleep(1.0);
-    static int num = 0;
-    ++num;
-    ROS_INFO("The goal %d is reached!", num );
-
-    if(num == 1 )
-    {
-        //**************first point --- pick up
-        ROS_INFO("Open the gripper!");
-        pub_gripper_command.publish(msg_enable);
-        sleep(0.5);
-        pub_gripper_command.publish(msg_open);//open the gripper
-        move_by_joint(home_joint_grip); //move to the pose to grip
-        //****** get the marker pose
-        geometry_msgs::Pose target_marker_pose;
-        get_marker_pose(marker_frame,target_marker_pose);
-        //****** compute the pose to grip
-        geometry_msgs::Pose target_wrist3_pose;
-        compute_wrist3_pose(target_marker_pose,target_wrist3_pose , distance_gripper_w3 , object_height, true);
-        //****** execute the grip
-        geometry_msgs::Pose currnt_wrist3_pose = getCurrentPose().pose;//relative to world
-        currnt_wrist3_pose.position.z -= height_world_base;
-        target_wrist3_pose.orientation = currnt_wrist3_pose.orientation;
-        geometry_msgs::Pose start_wrist3_pose = target_wrist3_pose;
-        start_wrist3_pose.position.z = currnt_wrist3_pose.position.z ;//relative to world
-        move_by_coordinate(start_wrist3_pose);
-        move_by_coordinate(target_wrist3_pose);
-//        move_Cartesian_path( start_wrist3_pose, target_wrist3_pose);
-        sleep(1.0);
-        //****** grip and make the aubo move to home state
-        ROS_INFO("Close the gripper!");
-        pub_gripper_command.publish(msg_enable);
-        sleep(0.5);
-        pub_gripper_command.publish(msg_close);//close the gripper
-        sleep(1.0);
+    //****** grip and make the aubo move to home state
+    ROS_INFO("Close the gripper!");
+    pub_gripper_command.publish(msg_enable);
+    sleep(0.5);
+    pub_gripper_command.publish(msg_close);//close the gripper
+    sleep(1.0);
 //        move_Cartesian_path( target_wrist3_pose,start_wrist3_pose);
-        move_by_coordinate(start_wrist3_pose);
-        move_by_joint(home_joint);
+    move_by_coordinate(start_wrist3_pose);
+    move_by_joint(home_joint);
 
-        //****** move to the position to place the object
-        geometry_msgs::PoseStamped basic_home_target;
-        //basic_target.header.seq = 1;
-        basic_home_target.header.stamp = ros::Time::now();
-        basic_home_target.header.frame_id = "map";
-        basic_home_target.pose.position.x = -0.555596232414;
-        basic_home_target.pose.position.y = -1.29687714577;
-        basic_home_target.pose.position.z = 0.0;
-        basic_home_target.pose.orientation.x = 0.0;
-        basic_home_target.pose.orientation.y = 0.0;
-        basic_home_target.pose.orientation.z = -0.71561187448;
-        basic_home_target.pose.orientation.w = 0.698498135361;
-        pub_basic_point.publish(basic_home_target);
+    //****** move to the position to place the object
+    geometry_msgs::PoseStamped basic_home_target;
+    //basic_target.header.seq = 1;
+    basic_home_target.header.stamp = ros::Time::now();
+    basic_home_target.header.frame_id = "map";
+    basic_home_target.pose.position.x = -0.555596232414;
+    basic_home_target.pose.position.y = -1.29687714577;
+    basic_home_target.pose.position.z = 0.0;
+    basic_home_target.pose.orientation.x = 0.0;
+    basic_home_target.pose.orientation.y = 0.0;
+    basic_home_target.pose.orientation.z = -0.71561187448;
+    basic_home_target.pose.orientation.w = 0.698498135361;
+    pub_basic_point.publish(basic_home_target);
 
-    }
-    if(num == 1 ){
-        //************* home point --- place
-        move_by_joint(home_joint_grip);//move to the pose to place
+    //************* home point --- place
+    move_by_joint(home_joint);//move to the pose to place
 
-        geometry_msgs::Pose target_marker_pose;
-        get_marker_pose(marker_frame,target_marker_pose);
-        //****** compute the pose to place
-        geometry_msgs::Pose target_wrist3_pose;
-        compute_wrist3_pose(target_marker_pose,target_wrist3_pose , distance_gripper_w3 , object_height, false);
-        target_wrist3_pose.position.z += object_height;
-        //****** execute the grip
-        geometry_msgs::Pose currnt_wrist3_pose = getCurrentPose().pose;//relative to world
-        target_wrist3_pose.orientation = currnt_wrist3_pose.orientation;
-        geometry_msgs::Pose start_wrist3_pose = target_wrist3_pose;
-        currnt_wrist3_pose.position.z -= height_world_base;
-        start_wrist3_pose.position.z = currnt_wrist3_pose.position.z ;//relative to world
-        move_by_coordinate(start_wrist3_pose);
-        move_by_coordinate(target_wrist3_pose);
+    get_marker_pose(marker_frame,target_marker_pose);
+    //****** compute the pose to place
+    compute_wrist3_pose(target_marker_pose,target_wrist3_pose , distance_gripper_w3 , object_height, false);
+    target_wrist3_pose.position.z += object_height;
+    //****** execute the grip
+    currnt_wrist3_pose = getCurrentPose().pose;//relative to world
+    target_wrist3_pose.orientation = currnt_wrist3_pose.orientation;
+    start_wrist3_pose = target_wrist3_pose;
+    currnt_wrist3_pose.position.z -= height_world_base;
+    start_wrist3_pose.position.z = currnt_wrist3_pose.position.z ;//relative to world
+    move_by_coordinate(start_wrist3_pose);
+    move_by_coordinate(target_wrist3_pose);
 //        move_Cartesian_path( start_wrist3_pose, target_wrist3_pose);
-        sleep(1.0);
-        //****** grip and make the aubo move to home state
-        ROS_INFO("Open the gripper!");
-        pub_gripper_command.publish(msg_enable);
-        sleep(0.5);
-        pub_gripper_command.publish(msg_open);//open the gripper
-        sleep(1.0);
+    sleep(1.0);
+    //****** grip and make the aubo move to home state
+    ROS_INFO("Open the gripper!");
+    pub_gripper_command.publish(msg_enable);
+    sleep(0.5);
+    pub_gripper_command.publish(msg_open);//open the gripper
+    sleep(1.0);
 //        move_Cartesian_path( target_wrist3_pose , start_wrist3_pose);
-        move_by_coordinate(start_wrist3_pose);
-        move_by_joint(home_joint);
-
-        //****** move to the other position
-        geometry_msgs::PoseStamped basic_other_target;
-        //basic_other_target.header.seq = 1;
-        basic_other_target.header.stamp = ros::Time::now();
-        basic_other_target.header.frame_id = "map";
-        basic_other_target.pose.position.x = -0;
-        basic_other_target.pose.position.y = -1;
-        basic_other_target.pose.position.z = 0.0;
-        basic_other_target.pose.orientation.x = 0.0;
-        basic_other_target.pose.orientation.y = 0.0;
-        basic_other_target.pose.orientation.z = 0.0;
-        basic_other_target.pose.orientation.w = 1;
-        pub_basic_point.publish(basic_other_target);
-    }
+    move_by_coordinate(start_wrist3_pose);
+    move_by_joint(home_joint);
 }
 
 void MOVE_ALL::print_aubo_state()
@@ -283,7 +220,7 @@ void MOVE_ALL::move_Cartesian_path(const geometry_msgs::Pose &start_wrist3_pose,
     // Calculate Cartesian interpolation path: return path score (0~1, -1 stands for error)
 
     double fraction = computeCartesianPath(waypoints, eef_step, jump_threshold, trajectory);
-    if( (1 - fraction) < 0.001 )
+    if( (1 - fraction) < 0.001 )//如果规划精度接近与1的话，执行运动
     {
         ROS_INFO("move Cartesian path compute --- sucess");
         // 生成机械臂的运动规划数据

@@ -29,11 +29,6 @@ include_directories(
         ${catkin_INCLUDE_DIRS}
 )
 
-add_executable(move_aubo
-        src/move_aubo.cpp src/move_aubo_api.cpp)
-add_dependencies(move_aubo ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS} )
-target_link_libraries(move_aubo  ${catkin_LIBRARIES})
-
 add_executable(get_pose
         src/get_pose.cpp)
 add_dependencies(get_pose ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
@@ -45,11 +40,6 @@ add_dependencies(aubo_add_collision ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin
 target_link_libraries(aubo_add_collision  ${catkin_LIBRARIES})
 
 add_executable(move_all
-        src/move_all.cpp src/move_aubo_api.cpp src/move_all_base.cpp)
+        src/move_all.cpp src/move_all_base.cpp)
 add_dependencies(move_all ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS}  hand_control_generate_messages_cpp)
 target_link_libraries(move_all  ${catkin_LIBRARIES}  )
-
-add_executable(publish_basic_target
-        src/publish_basic_target.cpp)
-add_dependencies(publish_basic_target ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(publish_basic_target  ${catkin_LIBRARIES}  )

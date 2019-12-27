@@ -5,19 +5,18 @@
         <arg name="robot_ip" value="192.168.20.107" /> <!--127.0.0.1 192.168.20.106-->
     </include>
 
-<!--    &lt;!&ndash;start the aubo robot&ndash;&gt;
-    <include file="$(find aubo_i5_moveit_config)/launch/moveit_planning_execution.launch">
+    <!--start the aubo robot-->
+<!--    <include file="$(find aubo_i5_moveit_config)/launch/moveit_planning_execution.launch">
         <arg name="sim" value="true" /> &lt;!&ndash;true flase&ndash;&gt;
         <arg name="robot_ip" value="127.0.0.1" /> &lt;!&ndash;127.0.0.1 192.168.20.106&ndash;&gt;
     </include>-->
 
-<!--    &lt;!&ndash;start the gripper control &ndash;&gt;
+    <!--start the gripper control -->
     <node pkg="hand_control" type="hand_control_node" name="hand_control_node" >
-    </node>-->
+    </node>
 
     <!-- start the aruco-->
     <include file="$(find aruco_ros)/launch/single.launch">
-        <!--arg name="config" value="true" /-->
     </include>
 
     <!-- start usb_cam-->

@@ -104,11 +104,11 @@ rostopic pub /move_base_simple/goal geometry_msgs/seStamped "header:
 
  a. 测试aubo move to home,  gripper open and close
 
-#### b. 手眼标定，看多张aruco码的识别效果，看根据marker得到的gripper位姿是否合理
+ b. 手眼标定，看多张aruco码的识别效果，看根据marker得到的gripper位姿是否合理
 
  c. 找一个效果好的实验室地图，测试 底盘导航
 
-#### d. 准备实验物品
+ d. 准备实验物品
 
 比底盘稍微高一点的凳子
 

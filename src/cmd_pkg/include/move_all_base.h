@@ -32,7 +32,7 @@ struct MOVE_ALL : public moveit::planning_interface::MoveGroupInterface{
     bool sim;
     // some constants
     const double height_world_base = 1.5105 - 1.0085;
-    std::vector<double> home_joint , home_joint_grip;
+    std::vector<double> home_joint;
     hand_control::hand_control_cmd msg_open , msg_close , msg_enable;
     const std::string reference_frame="base_link";
     const std::string end_effector_link = "wrist3_Link";
