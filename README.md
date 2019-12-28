@@ -26,24 +26,42 @@ Mobile Robot Experiment in 2019 Autumn
 `cmd_pkg`
 
 ├── CMakeLists.txt
+
 ├── config
+
+
 │   ├── easy_handeye_eye_on_hand.yaml
+
 │   └── map
+
 ├── include
+
 │   └── move_all_base.h
+
 ├── launch
+
 │   └── aubo_bringup.launch
+
 ├── package.xml
+
 └── src
+
     ├── aubo_add_collision.cpp
+    
     ├── exp4_1.py
+    
     ├── exp4_2.py
+    
     ├── get_pose.cpp
+    
     ├── move_all_base.cpp
+    
     └── move_all.cpp
+    
 
 `doc`
 ├── commands.md
+
 └── README.md
 
 ```
