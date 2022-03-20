@@ -1,9 +1,11 @@
 # mobile_robot_exp
-Mobile Robot Experiment in 2019 Autumn
+Mobile Robot Experiment in 2019 Autumn: 实现基于marker码识别的aubo i5机械臂码垛实验
 
 ## 1.实验结果
 
-[实现基于marker码识别的aubo i5机械臂码垛实验](https://youtu.be/MhXmcVEn2Do)
+[video](https://youtu.be/MhXmcVEn2Do)
+
+[![](src/doc/exp.gif)](https://youtu.be/MhXmcVEn2Do)
 
 ## 2. 环境配置
 
